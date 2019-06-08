@@ -13,8 +13,33 @@
 
 > “Any color you like.”
 
+---
 > Axiros, GK: ... and has 79 cols plus single apos. We patched it accordingly, in the spirit of [white](https://github.com/kenneth-reitz/white).
 
+Install (using plugged as bundle manager, Vundle analogous):
+
+Into your .vimrc:
+
+```
+Plug 'axiros/black'
+
+iab Pdb breakpoint()
+map <Leader>e Otry:<Esc>j^i<TAB><Esc>oexcept Exception as ex:<CR>print('breakpoint set')<CR>breakpoint()<CR>keep_ctx=True<Esc>^
+let g:black_linelength = 79
+let g:black_fast = 1
+"autocmd BufWritePre * execute ':RemoveWhitespace'
+"autocmd BufWritePre *.py execute ':Black'
+fun! Blackify()
+    if &ft =~ 'python'
+        :Black
+    endif
+endfun
+autocmd BufWritePre * call Blackify()
+```
+
+[Tips](https://youtu.be/esZLCuWs_2Y?t=2021) : git-hyper-blame, PR command line instructions...
+
+---
 
 *Black* is the uncompromising Python code formatter.  By using it, you
 agree to cede control over minutiae of hand-formatting.  In return,
