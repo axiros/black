@@ -13,6 +13,8 @@
 
 > “Any color you like.”
 
+> Axiros, GK: ... and has 79 cols plus single apos. We patched it accordingly, in the spirit of [white](https://github.com/kenneth-reitz/white).
+
 
 *Black* is the uncompromising Python code formatter.  By using it, you
 agree to cede control over minutiae of hand-formatting.  In return,
@@ -297,7 +299,7 @@ ignore = E501
 ```
 
 You'll find *Black*'s own .flake8 config file is configured like this.
-If you're curious about the reasoning behind B950, 
+If you're curious about the reasoning behind B950,
 [Bugbear's documentation](https://github.com/PyCQA/flake8-bugbear#opinionated-warnings)
 explains it.  The tl;dr is "it's like highway speed limits, we won't
 bother you if you overdo it by a few km/h".
@@ -682,7 +684,7 @@ $ where black
 
 
 
-### Wing IDE 
+### Wing IDE
 
 Wing supports black via the OS Commands tool, as explained in the Wing documentation on [pep8 formatting](https://wingware.com/doc/edit/pep8). The detailed procedure is:
 
@@ -704,7 +706,7 @@ $ black --help
 - click on **+** in **OS Commands** -> New: Command line..
   - Title: black
   - Command Line: black %s
-  - I/O Encoding: Use Default 
+  - I/O Encoding: Use Default
   - Key Binding: F1
   - [x] Raise OS Commands when executed
   - [x] Auto-save files before execution
