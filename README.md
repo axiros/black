@@ -20,11 +20,13 @@ Install (using plugged as bundle manager, Vundle analogous):
 
 Into your .vimrc:
 
-```
+```vim
 Plug 'axiros/black'
 
+" not for black but related:
 iab Pdb breakpoint()
 map <Leader>e Otry:<Esc>j^i<TAB><Esc>oexcept Exception as ex:<CR>print('breakpoint set')<CR>breakpoint()<CR>keep_ctx=True<Esc>^
+
 let g:black_linelength = 79
 let g:black_fast = 1
 "autocmd BufWritePre * execute ':RemoveWhitespace'
@@ -34,8 +36,13 @@ fun! Blackify()
         :Black
     endif
 endfun
+" blackify at any write:
 autocmd BufWritePre * call Blackify()
 ```
+
+Should it not find the black module you need to hammer it into the environ: `export PYTHONPATH=$HOME/.vim/plugged/black`
+If deps are not found: `pip[3] install .` within that dir.
+
 
 [Tips](https://youtu.be/esZLCuWs_2Y?t=2021) : git-hyper-blame, PR command line instructions...
 
