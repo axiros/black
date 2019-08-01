@@ -374,7 +374,7 @@ def main(
     if grammar != 'all':
         grammar_chosen.append(grammar)
     if prefer_single_quotes:
-        prefer_single_quotes()
+        globals()['prefer_single_quotes']()
     for s in src:
         p = Path(s)
         if p.is_dir():
@@ -3857,4 +3857,3 @@ def patch_click() -> None:
 if __name__ == '__main__':
     patch_click()
     main()
-
