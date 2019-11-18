@@ -53,13 +53,22 @@ fun! Blackify()
 endfun
 " blackify at any write:
 autocmd BufWritePre * call Blackify()
+
+" keep vim python-mode happy, should you use it (recommended):
+let g:pymode_options_max_line_length = 88
+let g:pymode_lint_options_pep8 = {'max_line_length': g:pymode_options_max_line_length}
+let g:pymode_options_colorcolumn = 1
 ```
 
-Should it not find the black module you need to hammer it into the environ: `export PYTHONPATH=$HOME/.vim/plugged/black`
+Should it not find the black module you need to hammer it into the environ:
+`export PYTHONPATH=$HOME/.vim/plugged/black`
+
 If deps are not found: `pip[3] install .` within that dir.
 
 
 [Tips](https://youtu.be/esZLCuWs_2Y?t=2021) : git-hyper-blame, PR command line instructions...
+
+Original Docu follows:
 
 ---
 
