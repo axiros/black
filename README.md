@@ -14,7 +14,21 @@
 > “Any color you like.”
 
 ---
-> Axiros, GK: ... and has 79 cols plus single apos. We patched it accordingly, in the spirit of [white](https://github.com/kenneth-reitz/white).
+> Axiros, GK: ... except the single quotes.
+We patched black accordingly, in the spirit of [white](https://github.com/kenneth-reitz/white):
+
+```python
+"""
+Module doc
+"""
+
+
+def foo():
+    """func doc"""    # double quotes for docstrings
+    s = 'hello world' # single quotes for code 
+    m = {'a': 'b'}
+```
+---
 
 Install (using plugged as bundle manager, Vundle analogous):
 
@@ -27,7 +41,8 @@ Plug 'axiros/black'
 iab Pdb breakpoint()
 map <Leader>e Otry:<Esc>j^i<TAB><Esc>oexcept Exception as ex:<CR>print('breakpoint set')<CR>breakpoint()<CR>keep_ctx=True<Esc>^
 
-let g:black_linelength = 79
+" default:
+let g:black_linelength = 88
 let g:black_fast = 1
 "autocmd BufWritePre * execute ':RemoveWhitespace'
 "autocmd BufWritePre *.py execute ':Black'
