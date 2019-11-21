@@ -25,11 +25,13 @@ CURRENT_DIR = Path(__file__).parent
 
 
 def get_version():
-    black_py = CURRENT_DIR / ".." / "black.py"
-    _version_re = re.compile(r"__version__\s+=\s+(?P<version>.*)")
-    with open(str(black_py), "r", encoding="utf8") as f:
-        version = _version_re.search(f.read()).group("version")
-    return str(ast.literal_eval(version))
+    import sys
+
+    sys.path.append(str(CURRENT_DIR.parent))
+    from _version import get_versions
+
+    v = get_versions()
+    return v.get("closest-tag", v["version"])
 
 
 def make_pypi_svg(version):
@@ -161,7 +163,7 @@ html_theme_options = {
     "show_related": False,
     "description": "“Any color you like.”",
     "github_button": True,
-    "github_user": "python",
+    "github_user": "psf",
     "github_repo": "black",
     "github_type": "star",
     "show_powered_by": True,

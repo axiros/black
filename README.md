@@ -15,7 +15,18 @@
 
 ---
 > Axiros, GK: ... except the single quotes.
+
+## Log
+
+[2019-11-21 21:51]
+Dropped the possiblity to configure single quotes also for docstrings and used
+the (then simpler) patch from the "single-quotes" branch of the [black fork](https://github.com/mark-riley/black.git) (author: Mark Riley).
+Adapted only to use single quotes always (-A is default).
+
+[Iniital Version]
 We patched black accordingly, in the spirit of [white](https://github.com/kenneth-reitz/white):
+
+## Our Default Style
 
 ```python
 """
@@ -30,6 +41,8 @@ def foo():
 ```
 ---
 
+## Installation
+
 Install (using plugged as bundle manager, Vundle analogous):
 
 Into your .vimrc:
@@ -37,38 +50,39 @@ Into your .vimrc:
 ```vim
 Plug 'axiros/black'
 
-" not for black but related:
-iab Pdb breakpoint()
+" not black related but useful:
 map <Leader>e Otry:<Esc>j^i<TAB><Esc>oexcept Exception as ex:<CR>print('breakpoint set')<CR>breakpoint()<CR>keep_ctx=True<Esc>^
 
 " default:
 let g:black_linelength = 88
 let g:black_fast = 1
+" set appropriately:
+let g:black_virtualenv = "<set to py3 environ with black installed>"
+
+" Clean whitespace at saves:
 "autocmd BufWritePre * execute ':RemoveWhitespace'
-"autocmd BufWritePre *.py execute ':Black'
 fun! Blackify()
     if &ft =~ 'python'
         :Black
     endif
 endfun
-" blackify at any write:
+" blackify at any write of a python file:
 autocmd BufWritePre * call Blackify()
 
-" keep vim python-mode happy, should you use it (recommended):
+" Using pythonmode? Keep it happy:
 let g:pymode_options_max_line_length = 88
 let g:pymode_lint_options_pep8 = {'max_line_length': g:pymode_options_max_line_length}
 let g:pymode_options_colorcolumn = 1
 ```
 
-Should it not find the black module you need to hammer it into the environ:
-`export PYTHONPATH=$HOME/.vim/plugged/black`
+To install the lib and dependencies:
+With activated python3 venv run: `pip[3] install .`
 
-If deps are not found: `pip[3] install .` within that dir.
-
+## Conversion Tips:
 
 [Tips](https://youtu.be/esZLCuWs_2Y?t=2021) : git-hyper-blame, PR command line instructions...
 
-Original Docu follows:
+Original black docu follows:
 
 ---
 
