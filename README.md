@@ -25,7 +25,7 @@ Adapted only to use single quotes always (-A is default).
 Dropped the possiblity to configure single quotes also for docstrings and used
 the (then much simpler) patch from the "single-quotes" branch of [Mark Riley](https://github.com/mark-riley/black.git).
 
-### [Iniital Version]  
+### [Initial Version]  
 We patched black for configurable quoting styles, incl. docstrings.
 
 ## Our Default Style
