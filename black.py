@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import ast
 import asyncio
 from concurrent.futures import Executor, ProcessPoolExecutor
@@ -192,7 +193,7 @@ VERSION_TO_FEATURES: Dict[TargetVersion, Set[Feature]] = {
 class FileMode:
     target_versions: Set[TargetVersion] = Factory(set)
     line_length: int = DEFAULT_LINE_LENGTH
-    single_quotes: bool = False
+    single_quotes: bool = True
     string_normalization: bool = True
     is_pyi: bool = False
 
@@ -269,7 +270,7 @@ def read_pyproject_toml(
     '--single-quotes',
     is_flag=True,
     default=True,
-    help='Set the prefered quote style.',
+    help='Set the prefered quote style (AX: fixed to single quotes)',
 )
 @click.option(
     '-t',

@@ -78,6 +78,252 @@ let g:pymode_options_colorcolumn = 1
 To install the lib and dependencies:
 With activated python3 venv run: `pip[3] install .`
 
+## blf - black formatter
+
+A little tool to help format directories and use the server:
+
+```shell
+blf -h
+Black Formatter Wrapper (formats python files)
+
+USAGE: blf -d # starts server at 46782
+       blf [-2] [-c] [-s] [-l LEN] [-S] [-C] [file|dir]
+
+OPTIONS:
+-d: Starts server
+
+-h: Help
+-c: Client mode using the server (faster)
+    Default: Uses /agent/py3/bin/black
+-2: Formats to python2 (default py36)
+-l: Line Length (default: 88)
+-s: Set safe mode (default: fast mode)
+-S: Add failing file to skiplist (/root/.config/bf_skiplist)
+-C: Clear the skiplist before the run
+
+ARGUMENTS:
+file: Formats a python file
+dir: Formats a whole directory, recursively
+not set: Sends a hello world to the server (requires -c)
+```
+
+<details><summary>source...</summary>
+
+```bash
+2.bin$ cat blf
+#!/usr/bin/env bash
+
+PORT=46782
+DIR="$( cd"$(dirname "$0") && pwd)"
+
+server=false
+pyver="py36"
+client=false
+len=88
+fn=
+fn_skips="$HOME/.config/bf_skiplist"
+add_skips=false
+d_scratch=
+mode="fast"
+me="$(basename "$0")"
+
+doc="Black Formatter Wrapper (formats python files)
+
+USAGE: $me -d # starts server at $PORT
+       $me [-2] [-c] [-s] [-l LEN] [-S] [-C] [file|dir]
+
+OPTIONS:
+-d: Starts server
+
+-h: Help
+-c: Client mode using the server (faster)
+    Default: Uses $DIR/black
+-2: Formats to python2 (default $pyver)
+-l: Line Length (default: $len)
+-s: Set safe mode (default: fast mode)
+-S: Add failing file to skiplist ($fn_skips)
+-C: Clear the skiplist before the run
+
+ARGUMENTS:
+file: Formats a python file
+dir: Formats a whole directory, recursively
+not set: Sends a hello world to the server (requires -c)
+
+"
+
+function usage {
+    echo -e "$doc"
+    exit ${1:-0}
+}
+
+function finish {
+    test -d "$d_scratch" && /bin/rm -rf "$d_scratch"
+}
+
+trap finish EXIT
+
+function die {
+    echo -e "${R}ERR$O $*"
+    exit 1
+}
+
+
+
+function parse_cli {
+    test -z "$1" && usage
+
+    while getopts ":hsd2cSCl:" o; do
+        case "${o}" in
+            h)
+                usage
+                ;;
+            S)
+                add_skips=true
+                mkdir -p "$(dirname "$fn_skips")"
+                touch "$fn_skips"
+                ;;
+            C)
+                echo "Clearing skiplist"
+                /bin/rm -f "$fn_skips"
+                ;;
+            s)
+                mode=safe
+                ;;
+            l)
+                len="$OPTARG"
+                ;;
+            d)
+                server=true
+                ;;
+            2)
+                pyver="py27"
+                ;;
+            c)
+                client=true
+                ;;
+            *)
+                usage 1
+                ;;
+        esac
+    done
+    shift $((OPTIND-1))
+    fn="${1:-}"
+    $client && make_scratch_dir
+}
+
+function start_server {
+    $server || return 0
+    "$DIR/blackd" --bind-port $PORT
+    exit $?
+}
+
+function send {
+    local fnt body
+    fnt="$1"
+    body="$2"
+    curl  --fail -XPOST -s "localhost:$PORT" \
+         -H "X-LINE-LENGTH: $len"         \
+         -H "X-Fast-Or-Safe: $mode"       \
+         -H "X-Python-Variant: $pyver"    \
+         --output "$fnt"                  \
+         --create-dirs                    \
+         -d "$body"
+    test "$?" == 0 && return 0
+    $add_skips && return 1
+    die "Syntax Error on source file. Try without -c then fix or consider -S."
+}
+
+
+function make_scratch_dir {
+    d_scratch=$(mktemp -d -t tmp.XXXXXXXXXX)
+}
+
+function format_file {
+    echo -e "Formatting: $M$1$O"
+    local fn fnt d
+    #fnt="$d_scratch/$(basename "$1")"
+    d="$(dirname "$1")"
+    d="$(cd "$d" && pwd)"
+    fn="$d/$(basename "$1")"
+    fnt="$d_scratch/$fn"
+    if [[ $client == true ]]
+    then
+        send "$fnt" "$(cat "$1")" || {
+            check_add_skips "$fn"
+            return 0
+        }
+        test -z "$(cat "$fnt" 2>/dev/null)" && {
+            echo "(unchanged)"
+            return 0
+        }
+        echo -e "${I}formatted$O"
+        mv "$fnt" "$1"
+    else
+        "$DIR/black" -t "$pyver" "$fn" || {
+            check_add_skips "$fn"
+            return 0
+        }
+    fi
+}
+
+function check_add_skips {
+    local fn; fn="$1"
+    grep "$fn" "$fn_skips" && {
+        echo -e "$R$fn$O is in skiplist - continuing."
+        return
+    }
+    echo "$fn" >> "$fn_skips"
+    die "Added to $fn_skips for next run: $R$fn$O"
+}
+
+
+function format {
+    $server && return 0
+    if [ -z "$fn" ]
+    then
+        py='if 1: print("hello world")'
+        echo -e "Trying the server, sending '$py'\nResult:"
+        send "$d_scratch/hello.py" "$py"
+        cat "$d_scratch/hello.py"
+    elif [ -d "$fn" ]
+    then
+        cd "$fn" || die "Sorry"
+        fn="$(pwd)"
+        for f in $(find "$fn" -print |grep .py$)
+        do
+            format_file "$f"
+        done
+    elif [ -f "$fn" ]
+    then
+        format_file "$fn"
+    else
+        die "Not found: $fn"
+    fi
+}
+
+
+function set_colors {
+    local c; c="\e[1;38;5;"
+    R="${R:-"${c}124m"}"
+    I="${I:-"${c}87m"}"
+    M="${M:-"${c}62m"}"
+    O="\e[0m"
+}
+
+function main {
+    set_colors
+    parse_cli "$@"
+    start_server
+    format
+}
+
+main "$@"
+
+```
+
+</details>
+
+
 ## Conversion Tips:
 
 [Tips](https://youtu.be/esZLCuWs_2Y?t=2021) : git-hyper-blame, PR command line instructions...
