@@ -18,12 +18,12 @@
 
 ## Log
 
-[2019-11-21 21:51]
+- [2019-11-21 21:51]
 Dropped the possiblity to configure single quotes also for docstrings and used
 the (then simpler) patch from the "single-quotes" branch of the [black fork](https://github.com/mark-riley/black.git) (author: Mark Riley).
 Adapted only to use single quotes always (-A is default).
 
-[Iniital Version]
+- [Iniital Version]
 We patched black accordingly, in the spirit of [white](https://github.com/kenneth-reitz/white):
 
 ## Our Default Style
@@ -77,6 +77,7 @@ let g:pymode_options_colorcolumn = 1
 
 To install the lib and dependencies:
 With activated python3 venv run: `pip[3] install .`
+Add `[d]` for getting the server as well.
 
 ## blf - black formatter
 
@@ -94,7 +95,7 @@ OPTIONS:
 
 -h: Help
 -c: Client mode using the server (faster)
-    Default: Uses /agent/py3/bin/black
+    Default: Invokes black.py at every format.
 -2: Formats to python2 (default py36)
 -l: Line Length (default: 88)
 -s: Set safe mode (default: fast mode)
