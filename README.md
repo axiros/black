@@ -18,13 +18,15 @@
 
 ## Log
 
-- [2019-11-21 21:51]
-Dropped the possiblity to configure single quotes also for docstrings and used
-the (then simpler) patch from the "single-quotes" branch of the [black fork](https://github.com/mark-riley/black.git) (author: Mark Riley).
+### [2019-11-22 06:19]   
 Adapted only to use single quotes always (-A is default).
 
-- [Iniital Version]
-We patched black accordingly, in the spirit of [white](https://github.com/kenneth-reitz/white):
+### [2019-11-21 21:51]  
+Dropped the possiblity to configure single quotes also for docstrings and used
+the (then much simpler) patch from the "single-quotes" branch of [Mark Riley](https://github.com/mark-riley/black.git).
+
+### [Iniital Version]  
+We patched black for configurable quoting styles, incl. docstrings.
 
 ## Our Default Style
 
