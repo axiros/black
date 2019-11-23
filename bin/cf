@@ -106,12 +106,9 @@ me="$(basename "$0")"
 git_ch1="git diff --name-only --diff-filter=ACM --cached"
 git_ch2="git diff --name-only --diff-filter=ACM"
 
-hook_example1='
-    for f in $(git diff --cached --name-only --diff-filter=ACM)
-    do; $DIR/black -t py27 --check "$f" || exit 1; done
-'
 
-doc="Black Formatter Wrapper (formats python files)
+# Now we can build the docstring with actual values:
+doc="Code Formatter. Wraps black (formats python files).
 
 USAGE
 
@@ -134,7 +131,7 @@ OPTIONS
     then replace with the toplevel (root) of the repo
     => i.e. \`$me -t .\` always formats the whole repo.
 
-ARGUMENTS:
+ARGUMENTS
 
 FILE     : Formats this python file
 DIR      : Formats a whole directory, recursively
@@ -164,9 +161,18 @@ They are derived via
     $git_ch2
     $git_ch1
 
+- Example repo pre-commit hooks you find [here](./bin/hooks)
 
-- Example repo pre-commit hook, rejecting commits when not formatted:
-$hook_example1
+EXAMPLES
+
+# Formats all changed files (git) within current directory and deeper
+$me -g
+# Same for the whole repo
+$me -gt
+# For a given directory of file
+$me -gt <dir|file>  # Same for
+
+
 "
 
 function usage {
