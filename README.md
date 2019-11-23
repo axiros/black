@@ -112,28 +112,43 @@ not set: Sends a hello world to the server (requires -c)
 
 <details><summary>source...</summary>
 
-```bash
-2.bin$ cat blf
+
+```
 #!/usr/bin/env bash
 
+# Python file formatter
+# Date: 2019-11-22 13:48]
+# Author: gunther klessinger
+
 PORT=46782
-DIR="$( cd"$(dirname "$0") && pwd)"
+DIR="$(cd "$(dirname "$0")" && pwd)"
 
 server=false
-pyver="py36"
 client=false
-len=88
-fn=
+formatter_black_mode="${formatter_black_mode:-fast}"
+formatter_black_line_len="${formatter_black_line_len:-88}"
+formatter_black_target_version="${formatter_black_target_version:-py36}"
+dir_or_file=
 fn_skips="$HOME/.config/bf_skiplist"
 add_skips=false
 d_scratch=
-mode="fast"
+git_changed_only=false
+toplevel=false
+have_read_project_settings=false
 me="$(basename "$0")"
+
+git_ch1="git diff --name-only --diff-filter=ACM --cached"
+git_ch2="git diff --name-only --diff-filter=ACM"
+
+hook_example1='
+    for f in $(git diff --cached --name-only --diff-filter=ACM)
+    do; $DIR/black -t py27 --check "$f" || exit 1; done
+'
 
 doc="Black Formatter Wrapper (formats python files)
 
 USAGE: $me -d # starts server at $PORT
-       $me [-2] [-c] [-s] [-l LEN] [-S] [-C] [file|dir]
+       $me [-2] [-t] [-c] [-m <safe|fast>] [-l LEN] [-S] [-C] [-g] [file|dir]
 
 OPTIONS:
 -d: Starts server
@@ -141,17 +156,45 @@ OPTIONS:
 -h: Help
 -c: Client mode using the server (faster)
     Default: Uses $DIR/black
--2: Formats to python2 (default $pyver)
--l: Line Length (default: $len)
--s: Set safe mode (default: fast mode)
+-2: Formats to python2 (default $formatter_black_target_version)
+-l: Line Length (default: $formatter_black_line_len)
+-m: Set black mode (default: $formatter_black_mode)
 -S: Add failing file to skiplist ($fn_skips)
 -C: Clear the skiplist before the run
+-g: When running over a directory, just take into account [changed files][1]
+    Applies only when you supply a directory argument
+-t: When giving a dir within a git repo as argument (e.g. '.')
+    then replace with the toplevel (root) of the repo
+    => i.e. \`$me -t .\` always formats the whole repo.
 
 ARGUMENTS:
-file: Formats a python file
-dir: Formats a whole directory, recursively
-not set: Sends a hello world to the server (requires -c)
+file     : Formats a python file
+dir      : Formats a whole directory, recursively
+<not set>: Sends a hello world to the server (requires -c)
 
+PROJECT SETTINGS / Environ Files:
+
+These config variables are supported, if supplied either in environ or in a file
+\`config.repo\` placed within the root git directory of the files to be formatted:
+
+Example:
+    # see black --help
+    formatter_black_mode=fast
+    formatter_black_line_len=88
+    formatter_black_target_version='py27'
+
+DETAILS:
+
+- 'Changed files':
+Only possible when working in git repos.
+They are derived via
+
+    $git_ch2
+    $git_ch1
+
+
+- Example repo pre-commit hook, rejecting commits when not formatted:
+$hook_example1
 "
 
 function usage {
@@ -175,10 +218,13 @@ function die {
 function parse_cli {
     test -z "$1" && usage
 
-    while getopts ":hsd2cSCl:" o; do
+    while getopts ":tghsd2cSCl:m:" o; do
         case "${o}" in
             h)
                 usage
+                ;;
+            g)
+                git_changed_only=true
                 ;;
             S)
                 add_skips=true
@@ -189,17 +235,20 @@ function parse_cli {
                 echo "Clearing skiplist"
                 /bin/rm -f "$fn_skips"
                 ;;
-            s)
-                mode=safe
-                ;;
-            l)
-                len="$OPTARG"
-                ;;
             d)
                 server=true
                 ;;
+            m)
+                formatter_black_mode="$OPTARG"
+                ;;
+            l)
+                formatter_black_line_len="$OPTARG"
+                ;;
+            t)
+                toplevel=true
+                ;;
             2)
-                pyver="py27"
+                formatter_black_target_version="py27"
                 ;;
             c)
                 client=true
@@ -210,7 +259,9 @@ function parse_cli {
         esac
     done
     shift $((OPTIND-1))
-    fn="${1:-}"
+    dir_or_file="${1:-}"
+    shift
+    test -z "$1" || die "Only give single dirs or files."
     $client && make_scratch_dir
 }
 
@@ -224,12 +275,12 @@ function send {
     local fnt body
     fnt="$1"
     body="$2"
-    curl  --fail -XPOST -s "localhost:$PORT" \
-         -H "X-LINE-LENGTH: $len"         \
-         -H "X-Fast-Or-Safe: $mode"       \
-         -H "X-Python-Variant: $pyver"    \
-         --output "$fnt"                  \
-         --create-dirs                    \
+    curl  --fail -XPOST -s "localhost:$PORT"                    \
+         -H "X-Fast-Or-Safe: $formatter_black_mode"             \
+         -H "X-LINE-LENGTH: $formatter_black_line_len"          \
+         -H "X-Python-Variant: $formatter_black_target_version" \
+         --output "$fnt"                                        \
+         --create-dirs                                          \
          -d "$body"
     test "$?" == 0 && return 0
     $add_skips && return 1
@@ -247,6 +298,7 @@ function format_file {
     #fnt="$d_scratch/$(basename "$1")"
     d="$(dirname "$1")"
     d="$(cd "$d" && pwd)"
+    $have_read_project_settings || read_project_settings "$d"
     fn="$d/$(basename "$1")"
     fnt="$d_scratch/$fn"
     if [[ $client == true ]]
@@ -262,10 +314,14 @@ function format_file {
         echo -e "${I}formatted$O"
         mv "$fnt" "$1"
     else
-        "$DIR/black" -t "$pyver" "$fn" || {
-            check_add_skips "$fn"
-            return 0
-        }
+        "$DIR/black" \
+            -t "$formatter_black_target_version" \
+            -l "$formatter_black_line_len"       \
+            --"$formatter_black_mode"            \
+            "$fn" || {
+                check_add_skips "$fn"
+                return 0
+            }
     fi
 }
 
@@ -279,28 +335,67 @@ function check_add_skips {
     die "Added to $fn_skips for next run: $R$fn$O"
 }
 
+function read_project_settings {
+    have_read_project_settings=true
+    r="$(repo_root "$1")"
+    test -e "$r/config.repo" || return
+    set -a && source "$r/config.repo" && set +a
+}
+
+function repo_root {
+    ( cd "$1" && git rev-parse --show-toplevel || die "Error in repo detection" )
+}
+
+
+function format_git_changed {
+    local fn d rr
+    d="$1"
+    rr="$(repo_root "$d")"
+    fn="$d_scratch/git_changed"
+    eval "$git_ch1" >  "$fn"
+    eval "$git_ch2" >> "$fn"
+
+    while read -r p; do
+        if [[ "$rr/$p" == $d* ]]
+        then
+            format_file "$rr/$p"
+        fi
+    done <"$fn"
+}
 
 function format {
     $server && return 0
-    if [ -z "$fn" ]
+    if [ -z "$dir_or_file" ]
     then
+        # simple hello world test for the server:
         py='if 1: print("hello world")'
         echo -e "Trying the server, sending '$py'\nResult:"
         send "$d_scratch/hello.py" "$py"
         cat "$d_scratch/hello.py"
-    elif [ -d "$fn" ]
+        exit
+    fi
+    if [ -d "$dir_or_file" ]
     then
-        cd "$fn" || die "Sorry"
-        fn="$(pwd)"
-        for f in $(find "$fn" -print |grep .py$)
+        local d="$dir_or_file"
+        cd "$d" || die "Sorry"
+        d="$(pwd)"
+        $toplevel && {
+            d="$(repo_root "$d")"
+            echo -e "Starting at toplevel: $I$d$O"
+        }
+        $git_changed_only && {
+            format_git_changed "$d"
+            return $?
+        }
+        for f in $(find "$d" -print |grep .py$)
         do
             format_file "$f"
         done
-    elif [ -f "$fn" ]
+    elif [ -f "$dir_or_file" ]
     then
-        format_file "$fn"
+        format_file "$dir_or_file"
     else
-        die "Not found: $fn"
+        die "Not found: $dir_or_file"
     fi
 }
 
